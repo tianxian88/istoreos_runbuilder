@@ -55,7 +55,7 @@ jobs:
       - name: Copy latest meta core to openclash directory
         run: |
           mv Meta/bin/meta/clash-linux-amd64 openclash-x86/clash_meta
-          mv Meta/bin/meta/clash-linux-arm64 openclash-a53/clash_meta
+          mv Meta/bin/meta/clash-linux-armv7 openclash-a53/clash_meta
           ls openclash-x86
           ls openclash-a53
 
