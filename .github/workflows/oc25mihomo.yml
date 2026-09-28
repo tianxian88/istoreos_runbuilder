@@ -1,7 +1,7 @@
 #=================================================
 # https://github.com/wukongdaily/RunFilesBuilder
 # Description: Build RunFiles using GitHub Actions
-# Lisence: MIT
+# License: MIT
 # Author: wukongdaily
 # Blog: wkdaily.cpolar.cn
 #=================================================
@@ -10,7 +10,7 @@ name: Build 25.10 mihomo OpenClash
 
 on:
   schedule:
-    - cron: "10 22 * * *"  # 北京时间早上 6 点 08
+    - cron: "10 22 * * *"  # 北京时间早上 6 点 10 分
   workflow_dispatch:
 
 jobs:
@@ -22,7 +22,7 @@ jobs:
         run: mkdir -p OpenClash openclash-x86 openclash-a53
         
       - name: Checkout package branch to OpenClash directory
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
           repository: vernesong/OpenClash
           path: OpenClash
@@ -43,7 +43,7 @@ jobs:
         run: mkdir Meta
       
       - name: Checkout core branch to Meta directory
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
           repository: tianxian88/mihomo
           path: Meta
@@ -56,9 +56,43 @@ jobs:
         run: |
           mv Meta/bin/meta/mihomo-linux-amd64-v1 openclash-x86/clash_meta
           mv Meta/bin/meta/mihomo-linux-arm64 openclash-a53/clash_meta
-          ls openclash-x86
-          ls openclash-a53
 
+      # --------------------------------------------------------
+      # 📥 下载 OpenClash 专属数据库组件并分发到两个架构目录
+      # --------------------------------------------------------
+      - name: Download OpenClash Database Files
+        run: |
+          echo "Current Path: $PWD"
+          
+          # 为 x86 架构下载数据库
+          echo "📥 正在为 x86 下载 OpenClash 专属数据库组件..."
+          mkdir -p openclash-x86/etc/openclash && cd openclash-x86/etc/openclash
+          
+          # [1/4] Country.mmdb
+          wget -qO "Country.mmdb" "https://testingcf.jsdelivr.net/gh/alecthw/mmdb_china_ip_list@release/lite/Country.mmdb"
+          [ -s "Country.mmdb" ] && echo "  ✅ Country.mmdb 下载成功！" || echo "  ❌ Country.mmdb 下载失败！"
+
+          # [2/4] geoip.dat
+          wget -qO "geoip.dat" "https://testingcf.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/geoip.dat"
+          [ -s "geoip.dat" ] && echo "  ✅ geoip.dat 下载成功！" || echo "  ❌ geoip.dat 下载失败！"
+
+          # [3/4] geosite.dat
+          wget -qO "geosite.dat" "https://testingcf.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/geosite.dat"
+          [ -s "geosite.dat" ] && echo "  ✅ geosite.dat 下载成功！" || echo "  ❌ geosite.dat 下载失败！"
+
+          # [4/4] GeoLite2-ASN.mmdb
+          wget -qO "GeoLite2-ASN.mmdb" "https://testingcf.jsdelivr.net/gh/xishang0128/geoip@release/GeoLite2-ASN.mmdb"
+          [ -s "GeoLite2-ASN.mmdb" ] && echo "  ✅ GeoLite2-ASN.mmdb 下载成功！" || echo "  ❌ GeoLite2-ASN.mmdb 下载失败！"
+          
+          # 返回根目录并复制一份给 a53
+          cd ../../../
+          echo "📥 正在同步数据库文件到 a53 目录..."
+          mkdir -p openclash-a53/etc/openclash
+          cp -r openclash-x86/etc/openclash/* openclash-a53/etc/openclash/
+
+      # --------------------------------------------------------
+      # 🛠️ 生成安装脚本 (更新为自动移动数据库和内核)
+      # --------------------------------------------------------
       - name: Create install.sh script save to openclash directory
         run: |
           cat << 'EOF' > openclash-x86/install.sh
@@ -67,8 +101,18 @@ jobs:
               echo "update failed。"
               exit 1
           fi
-          apk add --allow-untrusted  *.apk || exit 1
+          apk add --allow-untrusted *.apk || exit 1
+          
+          # 创建并移动核心和数据库
+          mkdir -p /etc/openclash/core
           mv clash_meta /etc/openclash/core/
+          
+          # 如果包内带了etc/openclash的数据库，将其复制或同步过去
+          if [ -d "etc/openclash" ]; then
+              cp -rf etc/openclash/* /etc/openclash/
+              echo "  ✅ OpenClash 数据库已成功安装至 /etc/openclash/"
+          fi
+          
           sleep 10s
           ifconfig br-lan > /dev/null 2>&1
           if [ $? -ne 0 ]; then
@@ -86,7 +130,6 @@ jobs:
         run: | 
           git clone https://github.com/megastep/makeself.git
 
-      
       - name: move openclash directory to makeself & create run
         run: |
           mv openclash-x86 makeself/
@@ -102,18 +145,18 @@ jobs:
           echo "tag_name=$TODAY" >> $GITHUB_ENV
 
       - name: Upload run files as release assets
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.tag_name }}
           name: "Daily Build - ${{ env.tag_name }}"
           files: makeself/*.run
           token: ${{ secrets.GITHUB_TOKEN }}
           body: |
-             <p align="left">
-              <img src="https://img.shields.io/github/downloads/wkccd/CloudRunFilesBuilder/${{ env.tag_name }}/total?style=for-the-badge&label=%E4%BB%8A%E6%97%A5%E4%B8%8B%E8%BD%BD%E6%AC%A1%E6%95%B0&labelColor=blue&color=black"/>
-              <a href="https://wkdaily.cpolar.cn/archives/1">
-                <img src="https://img.shields.io/badge/可套用国内加速站下载-FC7C0D?logo=github&logoColor=fff&labelColor=000&style=for-the-badge"/>
-              </a>
-             </p>
+            <p align="left">
+             <img src="https://img.shields.io/github/downloads/wukongdaily/RunFilesBuilder/${{ env.tag_name }}/total?style=for-the-badge&label=%E4%BB%8A%E6%97%A5%E4%B8%8B%E8%BD%BD%E6%AC%A1%E6%95%B0&labelColor=blue&color=black"/>
+             <a href="https://wkdaily.cpolar.cn/archives/1">
+               <img src="https://img.shields.io/badge/可套用国内加速站下载-FC7C0D?logo=github&logoColor=fff&labelColor=000&style=for-the-badge"/>
+             </a>
+            </p>
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
