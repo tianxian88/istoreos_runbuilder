@@ -33,29 +33,31 @@ jobs:
                    src_armgen src_armgen_noweb \
                    makeself_tool
 
-          # 3. 下载并解压各个架构的 zip 包
+          # 3. 下载并解压各个架构的 zip 包，全部 cp 后按需删减
+          
           # --- x86_64 ---
           curl -L -o x86_64.zip "https://github.com/EasyTier/luci-app-easytier/releases/download/${LATEST_TAG}/EasyTier-${LATEST_TAG}-x86_64-SNAPSHOT.zip"
           unzip -q x86_64.zip -d temp_x86_64/
           cp temp_x86_64/*.apk src_x86_64/
-          # 仅保留 noweb 的放入 noweb 目录
-          cp temp_x86_64/*noweb*.apk src_x86_64_noweb/
-          # 标准目录删除 noweb，只留带 webUI 的
+          cp temp_x86_64/*.apk src_x86_64_noweb/
           rm -f src_x86_64/*noweb*.apk
+          rm -f src_x86_64_noweb/easytier-[0-9]*.apk
 
           # --- aarch64_cortex-a53 ---
           curl -L -o arm53.zip "https://github.com/EasyTier/luci-app-easytier/releases/download/${LATEST_TAG}/EasyTier-${LATEST_TAG}-aarch64_cortex-a53-SNAPSHOT.zip"
           unzip -q arm53.zip -d temp_arm53/
           cp temp_arm53/*.apk src_arm53/
-          cp temp_arm53/*noweb*.apk src_arm53_noweb/
+          cp temp_arm53/*.apk src_arm53_noweb/
           rm -f src_arm53/*noweb*.apk
+          rm -f src_arm53_noweb/easytier-[0-9]*.apk
 
           # --- aarch64_generic ---
           curl -L -o armgen.zip "https://github.com/EasyTier/luci-app-easytier/releases/download/${LATEST_TAG}/EasyTier-${LATEST_TAG}-aarch64_generic-SNAPSHOT.zip"
           unzip -q armgen.zip -d temp_armgen/
           cp temp_armgen/*.apk src_armgen/
-          cp temp_armgen/*noweb*.apk src_armgen_noweb/
+          cp temp_armgen/*.apk src_armgen_noweb/
           rm -f src_armgen/*noweb*.apk
+          rm -f src_armgen_noweb/easytier-[0-9]*.apk
 
       - name: Create install.sh scripts
         run: |
