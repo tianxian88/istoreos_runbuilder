@@ -1,0 +1,137 @@
+name: Build EasyTier Run Packages (With & Without Web)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '12 22 * * *' # 可选：每天定时触发
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y jq curl unzip
+
+      - name: Fetch Latest Tag and Download Files
+        run: |
+          # 1. 动态获取 EasyTier 最新 Tag (例如 v2.6.4)
+          LATEST_TAG=$(curl -s https://api.github.com/repos/EasyTier/luci-app-easytier/releases/latest | jq -r .tag_name)
+          if [ -z "$LATEST_TAG" ] || [ "$LATEST_TAG" = "null" ]; then
+            echo "Error: Failed to fetch the latest tag."
+            exit 1
+          fi
+          echo "LATEST_TAG=$LATEST_TAG" >> $GITHUB_ENV
+          echo "Latest Tag is: $LATEST_TAG"
+
+          # 2. 创建 6 个分类文件夹 (3种架构 × 2种版本)
+          mkdir -p src_x86_64 src_x86_64_noweb \
+                   src_arm53 src_arm53_noweb \
+                   src_armgen src_armgen_noweb \
+                   makeself_tool
+
+          # 3. 下载并解压各个架构的 zip 包
+          # --- x86_64 ---
+          curl -L -o x86_64.zip "https://github.com/EasyTier/luci-app-easytier/releases/download/${LATEST_TAG}/EasyTier-${LATEST_TAG}-x86_64-SNAPSHOT.zip"
+          unzip -q x86_64.zip -d temp_x86_64/
+          cp temp_x86_64/*.apk src_x86_64/
+          # 仅保留 noweb 的放入 noweb 目录
+          cp temp_x86_64/*noweb*.apk src_x86_64_noweb/
+          # 标准目录删除 noweb，只留带 webUI 的
+          rm -f src_x86_64/*noweb*.apk
+
+          # --- aarch64_cortex-a53 ---
+          curl -L -o arm53.zip "https://github.com/EasyTier/luci-app-easytier/releases/download/${LATEST_TAG}/EasyTier-${LATEST_TAG}-aarch64_cortex-a53-SNAPSHOT.zip"
+          unzip -q arm53.zip -d temp_arm53/
+          cp temp_arm53/*.apk src_arm53/
+          cp temp_arm53/*noweb*.apk src_arm53_noweb/
+          rm -f src_arm53/*noweb*.apk
+
+          # --- aarch64_generic ---
+          curl -L -o armgen.zip "https://github.com/EasyTier/luci-app-easytier/releases/download/${LATEST_TAG}/EasyTier-${LATEST_TAG}-aarch64_generic-SNAPSHOT.zip"
+          unzip -q armgen.zip -d temp_armgen/
+          cp temp_armgen/*.apk src_armgen/
+          cp temp_armgen/*noweb*.apk src_armgen_noweb/
+          rm -f src_armgen/*noweb*.apk
+
+      - name: Create install.sh scripts
+        run: |
+          # 编写通用的 install.sh 安装脚本
+          cat <<EOF > install_base.sh
+          #!/bin/sh
+          apk update
+          if [ \$? -ne 0 ]; then
+              echo "update failed"
+              exit 1
+          fi
+          apk add --allow-untrusted *.apk
+          EOF
+          
+          chmod +x install_base.sh
+
+          # 将安装脚本复制到所有 6 个目标文件夹中
+          cp install_base.sh src_x86_64/install.sh
+          cp install_base.sh src_x86_64_noweb/install.sh
+          cp install_base.sh src_arm53/install.sh
+          cp install_base.sh src_arm53_noweb/install.sh
+          cp install_base.sh src_armgen/install.sh
+          cp install_base.sh src_armgen_noweb/install.sh
+
+      - name: Move directories to makeself tool
+        run: |
+          git clone https://github.com/megastep/makeself.git makeself_tool/repo
+          
+          # 移动 6 个文件夹到 makeself 目录下
+          mv src_x86_64 makeself_tool/repo/
+          mv src_x86_64_noweb makeself_tool/repo/
+          mv src_arm53 makeself_tool/repo/
+          mv src_arm53_noweb makeself_tool/repo/
+          mv src_armgen makeself_tool/repo/
+          mv src_armgen_noweb makeself_tool/repo/
+
+      - name: Create self-extracting packages (.run)
+        run: |
+          cd makeself_tool/repo
+          
+          # 分别为 6 种情况打包
+          ./makeself.sh src_x86_64/ easytier_${{ env.LATEST_TAG }}_x86_64.run "EasyTier x86_64 (With WebUI)" ./install.sh
+          ./makeself.sh src_x86_64_noweb/ easytier_${{ env.LATEST_TAG }}_x86_64_noweb.run "EasyTier x86_64 (No WebUI)" ./install.sh
+          
+          ./makeself.sh src_arm53/ easytier_${{ env.LATEST_TAG }}_aarch64_cortex-a53.run "EasyTier ARM Cortex-A53 (With WebUI)" ./install.sh
+          ./makeself.sh src_arm53_noweb/ easytier_${{ env.LATEST_TAG }}_aarch64_cortex-a53_noweb.run "EasyTier ARM Cortex-A53 (No WebUI)" ./install.sh
+          
+          ./makeself.sh src_armgen/ easytier_${{ env.LATEST_TAG }}_aarch64_generic.run "EasyTier ARM Generic (With WebUI)" ./install.sh
+          ./makeself.sh src_armgen_noweb/ easytier_${{ env.LATEST_TAG }}_aarch64_generic_noweb.run "EasyTier ARM Generic (No WebUI)" ./install.sh
+          
+          # 将所有生成的 .run 文件移回根目录
+          mv *.run ../../
+
+      - name: Check file sizes
+        run: |
+          ls -lh *.run
+
+      - name: Set release tag name (Date-based)
+        id: vars
+        run: |
+          TODAY=$(date -u -d '+8 hour' +'%Y-%m-%d')
+          echo "tag_name=$TODAY" >> $GITHUB_ENV
+
+      - name: Upload run files as release assets
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ env.tag_name }}
+          name: "Daily Build - ${{ env.tag_name }}"
+          files: "*.run"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          body: |
+             <p align="left">
+              <img src="https://img.shields.io/github/downloads/wkccd/CloudRunFilesBuilder/${{ env.tag_name }}/total?style=for-the-badge&label=%E4%BB%8A%E6%97%A5%E4%B8%8B%E8%BD%BD%E6%AC%A1%E6%95%B0&labelColor=blue&color=black"/>
+              <a href="https://wkdaily.cpolar.cn/archives/1">
+                <img src="https://img.shields.io/badge/可套用国内加速站下载-FC7C0D?logo=github&logoColor=fff&labelColor=000&style=for-the-badge"/>
+              </a>
+             </p>
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
