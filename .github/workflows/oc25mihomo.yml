@@ -142,13 +142,13 @@ jobs:
         id: vars
         run: |
           TODAY=$(date -u -d '+8 hour' +'%Y-%m-%d')
-          echo "tag_name=$TODAY" >> $GITHUB_ENV
+          echo "tag_name=openclash-${{ env.version }}" >> $GITHUB_ENV
 
       - name: Upload run files as release assets
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.tag_name }}
-          name: "Daily Build - ${{ env.tag_name }}"
+          name: ${{ env.tag_name }}
           files: makeself/*.run
           token: ${{ secrets.GITHUB_TOKEN }}
           body: |
