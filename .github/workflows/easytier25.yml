@@ -99,14 +99,14 @@ jobs:
           cd makeself_tool/repo
           
           # 分别为 6 种情况打包
-          ./makeself.sh src_x86_64/ easytier_${{ env.LATEST_TAG }}_x86_64.run "EasyTier x86_64 (With WebUI)" ./install.sh
-          ./makeself.sh src_x86_64_noweb/ easytier_${{ env.LATEST_TAG }}_x86_64_noweb.run "EasyTier x86_64 (No WebUI)" ./install.sh
+          ./makeself.sh src_x86_64/ 25-easytier_${{ env.LATEST_TAG }}_x86_64.run "EasyTier x86_64 (With WebUI)" ./install.sh
+          ./makeself.sh src_x86_64_noweb/ 25-easytier_${{ env.LATEST_TAG }}_x86_64_noweb.run "EasyTier x86_64 (No WebUI)" ./install.sh
           
-          ./makeself.sh src_arm53/ easytier_${{ env.LATEST_TAG }}_aarch64_cortex-a53.run "EasyTier ARM Cortex-A53 (With WebUI)" ./install.sh
-          ./makeself.sh src_arm53_noweb/ easytier_${{ env.LATEST_TAG }}_aarch64_cortex-a53_noweb.run "EasyTier ARM Cortex-A53 (No WebUI)" ./install.sh
+          ./makeself.sh src_arm53/ 25-easytier_${{ env.LATEST_TAG }}_aarch64_cortex-a53.run "EasyTier ARM Cortex-A53 (With WebUI)" ./install.sh
+          ./makeself.sh src_arm53_noweb/ 25-easytier_${{ env.LATEST_TAG }}_aarch64_cortex-a53_noweb.run "EasyTier ARM Cortex-A53 (No WebUI)" ./install.sh
           
-          ./makeself.sh src_armgen/ easytier_${{ env.LATEST_TAG }}_aarch64_generic.run "EasyTier ARM Generic (With WebUI)" ./install.sh
-          ./makeself.sh src_armgen_noweb/ easytier_${{ env.LATEST_TAG }}_aarch64_generic_noweb.run "EasyTier ARM Generic (No WebUI)" ./install.sh
+          ./makeself.sh src_armgen/ 25-easytier_${{ env.LATEST_TAG }}_aarch64_generic.run "EasyTier ARM Generic (With WebUI)" ./install.sh
+          ./makeself.sh src_armgen_noweb/ 25-easytier_${{ env.LATEST_TAG }}_aarch64_generic_noweb.run "EasyTier ARM Generic (No WebUI)" ./install.sh
           
           # 将所有生成的 .run 文件移回根目录
           mv *.run ../../
