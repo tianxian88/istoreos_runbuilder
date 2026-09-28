@@ -1,18 +1,7 @@
-![Github](https://img.shields.io/badge/Passwall.run-123456?logo=github&logoColor=fff&labelColor=green&style=for-the-badge) 
-![Github](https://img.shields.io/badge/passwall2.run-123456?logo=github&logoColor=fff&labelColor=AB5ED8&style=for-the-badge)
-![Github](https://img.shields.io/badge/openclash.run-123456?logo=github&logoColor=fff&labelColor=red&style=for-the-badge) 
-![Github](https://img.shields.io/badge/SSRP.run-123456?logo=github&logoColor=fff&labelColor=blue&style=for-the-badge) <br> 
-![Github](https://img.shields.io/badge/nikki.run-123456?logo=github&logoColor=fff&labelColor=yellow&style=for-the-badge) 
-![Github](https://img.shields.io/badge/MOSDNS.run-123456?logo=github&logoColor=fff&labelColor=FF7F00&style=for-the-badge) 
-![Github](https://img.shields.io/badge/homeproxy.run-123456?logo=github&logoColor=fff&labelColor=3ae07c&style=for-the-badge)
-![Github](https://img.shields.io/badge/dae.run-123456?logo=github&logoColor=fff&labelColor=4bccdf&style=for-the-badge)<br>
-![Github](https://img.shields.io/badge/AdGuardHome.run-123456?logo=github&logoColor=fff&labelColor=8470FF&style=for-the-badge) 
-![Github](https://img.shields.io/badge/STORE商店.run-123456?logo=github&logoColor=fff&labelColor=9400D3&style=for-the-badge) 
-![Github](https://img.shields.io/badge/ARGON主题.run-123456?logo=github&logoColor=fff&labelColor=1E90FF&style=for-the-badge) 
-![Github](https://img.shields.io/badge/DUFS文件服务器.run-123456?logo=github&logoColor=fff&labelColor=00ae9d&style=for-the-badge)
+
 # RunFilesBuilder 
 - 24.10.x ✅
-- 25.12.x ❌
+- 25.12.x ✅
 
 
 【[ENGLISH](https://github.com/wukongdaily/RunFilesBuilder/blob/master/README_en.md)】
