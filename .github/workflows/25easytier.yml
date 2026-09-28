@@ -1,4 +1,4 @@
-name: Build 25.10 EasyTier Run Packages (With & Without Web)
+name: Build 25.12 EasyTier Run Packages (With & Without Web)
 
 on:
   workflow_dispatch:
