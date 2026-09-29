@@ -43,9 +43,9 @@ jobs:
       - name: Organize files for aarch64_cortex-a53&x86_64
         run: |
           mkdir mosdns_x86_64 mosdns_aarch64_cortex-a53 mosdns_aarch64_generic
-          cp x86_64-openwrt-24.10/packages_ci/*.apk mosdns_x86_64/
-          cp aarch64_cortex-a53-openwrt-24.10/packages_ci/*.apk mosdns_aarch64_cortex-a53/
-          cp aarch64_generic-openwrt-24.10/packages_ci/*.apk mosdns_aarch64_generic
+          cp x86_64-openwrt-24.10/packages_ci/*.ipk mosdns_x86_64/
+          cp aarch64_cortex-a53-openwrt-24.10/packages_ci/*.ipk mosdns_aarch64_cortex-a53/
+          cp aarch64_generic-openwrt-24.10/packages_ci/*.ipk mosdns_aarch64_generic
       - name: Create install.sh scripts (opkg)
         run: |
           cat <<EOF > mosdns_x86_64/install.sh
