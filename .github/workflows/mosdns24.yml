@@ -1,0 +1,113 @@
+#=================================================
+# https://github.com/wukongdaily/RunFilesBuilder
+# Description: Build RunFiles using GitHub Actions
+# Lisence: MIT
+# Author: wukongdaily
+# Blog: wkdaily.cpolar.cn
+#=================================================
+
+name: Build 24.10 MosDNS Run Packages
+
+on:
+  schedule:
+    - cron: "12 22 * * *"  # 北京时间早上 6 点12
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      
+      - name: Fetch latest release tag from mosdns
+        id: fetch_latest_tag
+        run: |
+          latest_tag=$(curl -s https://api.github.com/repos/sbwml/luci-app-mosdns/releases/latest | jq -r '.tag_name')
+          echo "LATEST_TAG=$latest_tag" >> $GITHUB_ENV
+          
+      - name: Clone makeself repository
+        run: git clone https://github.com/megastep/makeself.git
+
+      - name: Download latest mosdns files (OpenWrt 24.10 / ipk)
+        run: |
+          # 提取针对 24.10 且包含 .ipk 或通用 tar.gz 的下载链接（根据实际仓库命名调整，此处以 24.10 匹配为例）
+          curl -LO $(curl -s https://api.github.com/repos/sbwml/luci-app-mosdns/releases/latest | grep -oP '"browser_download_url":\s*".*aarch64_generic.*24.10.*tar.gz"' | cut -d '"' -f 4)
+          curl -LO $(curl -s https://api.github.com/repos/sbwml/luci-app-mosdns/releases/latest | grep -oP '"browser_download_url":\s*".*aarch64_cortex-a53.*24.10.*tar.gz"' | cut -d '"' -f 4)
+          curl -LO $(curl -s https://api.github.com/repos/sbwml/luci-app-mosdns/releases/latest | grep -oP '"browser_download_url":\s*".*x86_64.*24.10.*tar.gz"' | cut -d '"' -f 4)
+          
+          # 如果直接下载的是带有 24.10 的压缩包，解压它们
+          tar --one-top-level=aarch64_generic-openwrt-24.10 -xvzf *aarch64_generic*24.10*.tar.gz
+          tar --one-top-level=aarch64_cortex-a53-openwrt-24.10 -xvzf *aarch64_cortex-a53*24.10*.tar.gz
+          tar --one-top-level=x86_64-openwrt-24.10 -xvzf *x86_64*24.10*.tar.gz
+
+      - name: Organize files for OpenWrt 24.10 (IPK)
+        run: |
+          mkdir mosdns_x86_64 mosdns_aarch64_cortex-a53 mosdns_aarch64_generic
+          # OpenWrt 24.10 使用 ipk 包
+          cp x86_64-openwrt-24.10/*.ipk mosdns_x86_64/ 2>/dev/null || cp x86_64-openwrt-24.10/packages/*.ipk mosdns_x86_64/ 2>/dev/null || true
+          cp aarch64_cortex-a53-openwrt-24.10/*.ipk mosdns_aarch64_cortex-a53/ 2>/dev/null || cp aarch64_cortex-a53-openwrt-24.10/packages/*.ipk mosdns_aarch64_cortex-a53/ 2>/dev/null || true
+          cp aarch64_generic-openwrt-24.10/*.ipk mosdns_aarch64_generic/ 2>/dev/null || cp aarch64_generic-openwrt-24.10/packages/*.ipk mosdns_aarch64_generic/ 2>/dev/null || true
+          
+      - name: Create install.sh scripts (opkg)
+        run: |
+          cat <<EOF > mosdns_x86_64/install.sh
+          #!/bin/sh
+          echo "🔄 正在更新软件源..."
+          opkg update
+          if [ \$? -ne 0 ]; then
+              echo "❌ 软件源更新失败"
+              exit 1
+          fi
+          echo "📦 正在安装 MosDNS IPK 组件..."
+          opkg install *.ipk
+          if [ \$? -ne 0 ]; then
+              echo "❌ 安装失败，请检查依赖或架构是否匹配！"
+              exit 1
+          fi
+          echo "🎉 安装完成！"
+          EOF
+          chmod +x mosdns_x86_64/install.sh
+          cp mosdns_x86_64/install.sh mosdns_aarch64_cortex-a53/install.sh
+          cp mosdns_x86_64/install.sh mosdns_aarch64_generic/install.sh
+
+      - name: Move mosdns directories to makeself
+        run: |
+          mv mosdns_x86_64 makeself/
+          mv mosdns_aarch64_cortex-a53 makeself/
+          mv mosdns_aarch64_generic makeself/ 
+          
+      - name: Create self-extracting packages
+        run: |
+          cd makeself
+          ./makeself.sh mosdns_x86_64/ 24-mosdns_${{ env.LATEST_TAG }}_x86_64_24.10.run "by github action" ./install.sh
+          ./makeself.sh mosdns_aarch64_cortex-a53/ 24-mosdns_${{ env.LATEST_TAG }}_aarch64_cortex-a53_24.10.run "by github action" ./install.sh
+          ./makeself.sh mosdns_aarch64_generic/ 24-mosdns_${{ env.LATEST_TAG }}_aarch64_generic_24.10.run "by github action" ./install.sh
+          
+      - name: Check file sizes
+        run: |
+          ls -lh makeself/*.run
+   
+      - name: Set tag name
+        id: vars
+        run: |
+          TODAY=$(date -u -d '+8 hour' +'%Y-%m-%d')
+          echo "tag_name=mosdns_${{ env.LATEST_TAG }}_24.10" >> $GITHUB_ENV
+          
+      - name: Upload run files as release assets
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ env.tag_name }}
+          name:  ${{ env.tag_name }}
+          files: makeself/*.run
+          token: ${{ secrets.GITHUB_TOKEN }}
+          body: |
+             <p align="left">
+              <img src="https://img.shields.io/github/downloads/wkccd/CloudRunFilesBuilder/${{ env.tag_name }}/total?style=for-the-badge&label=%E4%BB%8A%E6%97%A5%E4%B8%8B%E8%BD%BD%E6%AC%A1%E6%95%B0&labelColor=blue&color=black"/>
+              <a href="https://wkdaily.cpolar.cn/archives/1">
+                <img src="https://img.shields.io/badge/可套用国内加速站下载-FC7C0D?logo=github&logoColor=fff&labelColor=000&style=for-the-badge"/>
+              </a>
+             </p>
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
