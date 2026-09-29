@@ -1,4 +1,4 @@
-name: Build EasyTier 24.10 Run Packages (With & Without Web)
+name: Build 24.10 EasyTier Run Packages (With & Without Web)
 
 on:
   workflow_dispatch:
