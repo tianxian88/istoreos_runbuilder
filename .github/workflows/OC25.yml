@@ -6,7 +6,7 @@
 # Blog: wkdaily.cpolar.cn
 #=================================================
 
-name: Build 25.12 OpenClash with mihomo
+name: Build 25.12 OpenClash with mihomo Run Packages
 
 on:
   schedule:
