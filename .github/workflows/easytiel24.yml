@@ -41,7 +41,7 @@ jobs:
           cp temp_x86_64/*.ipk src_x86_64/
           cp temp_x86_64/*.ipk src_x86_64_noweb/
           rm -f src_x86_64/*noweb*.ipk
-          rm -f src_x86_64_noweb/easytier-[0-9]*.ipk
+          rm -f src_x86_64_noweb/easytier_[0-9]*.ipk
 
           # --- aarch64_cortex-a53 ---
           curl -L -o arm53.zip "https://github.com/EasyTier/luci-app-easytier/releases/download/${LATEST_TAG}/EasyTier-${LATEST_TAG}-aarch64_cortex-a53-22.03.7.zip"
@@ -49,7 +49,7 @@ jobs:
           cp temp_arm53/*.ipk src_arm53/
           cp temp_arm53/*.ipk src_arm53_noweb/
           rm -f src_arm53/*noweb*.ipk
-          rm -f src_arm53_noweb/easytier-[0-9]*.ipk
+          rm -f src_arm53_noweb/easytier_[0-9]*.ipk
 
           # --- aarch64_generic ---
           curl -L -o armgen.zip "https://github.com/EasyTier/luci-app-easytier/releases/download/${LATEST_TAG}/EasyTier-${LATEST_TAG}-aarch64_generic-22.03.7.zip"
@@ -57,7 +57,7 @@ jobs:
           cp temp_armgen/*.ipk src_armgen/
           cp temp_armgen/*.ipk src_armgen_noweb/
           rm -f src_armgen/*noweb*.ipk
-          rm -f src_armgen_noweb/easytier-[0-9]*.ipk
+          rm -f src_armgen_noweb/easytier_[0-9]*.ipk
 
       - name: Create install.sh scripts
         run: |
