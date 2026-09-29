@@ -1,0 +1,167 @@
+#=================================================
+# https://github.com/wukongdaily/RunFilesBuilder
+# Description: Build RunFiles using GitHub Actions (OpenWrt 24.10 IPK Version)
+# License: MIT
+# Author: wukongdaily
+# Blog: wkdaily.cpolar.cn
+#=================================================
+
+name: Build OpenClash (IPK for OpenWrt 24.10) with mihomo
+
+on:
+  schedule:
+    - cron: "10 21 * * *"  # 北京时间早上 6 点 10 分
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Create OpenClash & architectures directory for git & ipk
+        run: mkdir -p OpenClash openclash-x86_64 openclash-x86_64_v1 openclash-x86_64_v3 openclash-a53 openclash-armv7
+        
+      - name: Checkout package branch to OpenClash directory
+        uses: actions/checkout@v5
+        with:
+          repository: vernesong/OpenClash
+          path: OpenClash
+          ref: package
+          
+      - name: Copy universal openclash IPK to all architectures
+        run: |
+          for arch in x86_64 x86_64_v1 x86_64_v3 a53 armv7; do
+            cp OpenClash/master/*.ipk openclash-${arch}/
+          done
+
+      - name: Get version info
+        id: extract_version
+        run: |
+          first_line=$(head -n 1 OpenClash/master/version)
+          echo "version=$first_line" >> $GITHUB_ENV
+
+      - name: Create Meta directory for git
+        run: mkdir Meta
+        
+      - name: Checkout core branch to Meta directory
+        uses: actions/checkout@v4
+        with:
+          repository: tianxian88/mihomo
+          path: Meta
+          ref: main
+        
+      - name: list all cores on core branch
+        run: ls Meta/bin/meta
+
+      - name: Copy latest meta core to respective directories
+        run: |
+          mv Meta/bin/meta/mihomo-linux-amd64    openclash-x86_64/clash_meta
+          mv Meta/bin/meta/mihomo-linux-amd64-v1 openclash-x86_64_v1/clash_meta
+          mv Meta/bin/meta/mihomo-linux-amd64-v3 openclash-x86_64_v3/clash_meta
+          mv Meta/bin/meta/mihomo-linux-arm64    openclash-a53/clash_meta
+          mv Meta/bin/meta/mihomo-linux-armv7    openclash-armv7/clash_meta
+
+      # --------------------------------------------------------
+      # 📥 统一集中下载 OpenClash 专属数据库并分发到所有架构目录
+      # --------------------------------------------------------
+      - name: Download OpenClash Database Files
+        run: |
+          echo "Current Path: $PWD"
+          echo "📥 正在集中下载 OpenClash 专属数据库组件..."
+          mkdir -p temp-db && cd temp-db
+          
+          # 下载数据库
+          wget -qO "Country.mmdb" "https://testingcf.jsdelivr.net/gh/alecthw/mmdb_china_ip_list@release/lite/Country.mmdb"
+          wget -qO "geoip.dat" "https://testingcf.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/geoip.dat"
+          wget -qO "geosite.dat" "https://testingcf.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/geosite.dat"
+          wget -qO "GeoLite2-ASN.mmdb" "https://testingcf.jsdelivr.net/gh/xishang0128/geoip@release/GeoLite2-ASN.mmdb"
+          
+          # 返回根目录并利用循环分发到所有架构
+          cd ..
+          echo "📥 正在同步数据库文件到各架构目录..."
+          for arch in x86_64 x86_64_v1 x86_64_v3 a53 armv7; do
+            mkdir -p openclash-${arch}/etc/openclash
+            cp temp-db/* openclash-${arch}/etc/openclash/
+          done
+
+      # --------------------------------------------------------
+      # 🛠️ 生成安装脚本并分发 (适配 OpenWrt 24.10 ipk)
+      # --------------------------------------------------------
+      - name: Create install.sh script and distribute
+        run: |
+          cat << 'EOF' > install.sh
+          echo "🔄 正在更新软件源..."
+          opkg update
+          
+          echo "📦 正在安装 OpenClash 依赖及主程序..."
+          # OpenWrt 24.10 通常自带依赖，如遇缺少依赖可由 opkg 自动解决或在此补充
+          opkg install *.ipk
+          if [ $? -ne 0 ]; then
+              echo "❌ 安装失败，请检查依赖或架构是否匹配！"
+              exit 1
+          fi
+          
+          # 创建并移动核心
+          mkdir -p /etc/openclash/core
+          mv clash_meta /etc/openclash/core/
+          chmod +x /etc/openclash/core/clash_meta
+          
+          # 如果包内带了etc/openclash的数据库，将其复制或同步过去
+          if [ -d "etc/openclash" ]; then
+              cp -rf etc/openclash/* /etc/openclash/
+              echo "  ✅ OpenClash 数据库已成功安装至 /etc/openclash/"
+          fi
+          
+          sleep 3s
+          ifconfig br-lan > /dev/null 2>&1
+          if [ $? -ne 0 ]; then
+              echo "接口错误，重启网络。"
+              /etc/init.d/network restart
+              echo "重启完毕"
+          fi
+          echo "🎉 OpenClash 安装完成！"
+          exit 0
+          EOF
+          chmod +x install.sh
+          
+          for arch in x86_64 x86_64_v1 x86_64_v3 a53 armv7; do
+            cp install.sh openclash-${arch}/install.sh
+          done
+
+      - name: Clone makeself repository for self-extracting installer
+        run: | 
+          git clone https://github.com/megastep/makeself.git
+
+      - name: Move all directories to makeself & create run
+        run: |
+          for arch in x86_64 x86_64_v1 x86_64_v3 a53 armv7; do
+            mv openclash-${arch} makeself/
+          done
+          
+          cd makeself
+          ./makeself.sh openclash-x86_64/    24-openclash-x86-64-${{ env.version }}.run "by github action" ./install.sh
+          ./makeself.sh openclash-x86_64_v1/ 24-openclash-x86-64-v1-${{ env.version }}.run "by github action" ./install.sh
+          ./makeself.sh openclash-x86_64_v3/ 24-openclash-x86-64-v3-${{ env.version }}.run "by github action" ./install.sh
+          ./makeself.sh openclash-a53/        24-openclash-aarch64_cortex-a53-${{ env.version }}.run "by github action" ./install.sh
+          ./makeself.sh openclash-armv7/      24-openclash-armv7-${{ env.version }}.run "by github action" ./install.sh
+        
+      - name: Set tag name
+        id: vars
+        run: |
+          TODAY=$(date -u -d '+8 hour' +'%Y-%m-%d')
+          echo "tag_name=openclash-ipk-${{ env.version }}" >> $GITHUB_ENV
+
+      - name: Upload run files as release assets
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ env.tag_name }}
+          name: ${{ env.tag_name }}
+          files: makeself/*.run
+          token: ${{ secrets.GITHUB_TOKEN }}
+          body: |
+            <p align="left">
+             <img src="https://img.shields.io/github/downloads/wukongdaily/RunFilesBuilder/${{ env.tag_name }}/total?style=for-the-badge&label=%E4%BB%8A%E6%97%A5%E4%B8%8B%E8%BD%BD%E6%AC%A1%E6%95%B0&labelColor=blue&color=black"/>
+             <a href="https://wkdaily.cpolar.cn/archives/1">
+               <img src="https://img.shields.io/badge/可套用国内加速站下载-FC7C0D?logo=github&logoColor=fff&labelColor=000&style=for-the-badge"/>
+             </a>
+            </p>
