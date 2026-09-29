@@ -22,7 +22,7 @@ jobs:
         run: mkdir -p OpenClash openclash-x86_64 openclash-x86_64_v1 openclash-x86_64_v3 openclash-a53 openclash-armv7
         
       - name: Checkout package branch to OpenClash directory
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: vernesong/OpenClash
           path: OpenClash
@@ -146,7 +146,7 @@ jobs:
           echo "tag_name=openclash-${{ env.version }}" >> $GITHUB_ENV
 
       - name: Upload run files as release assets
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ env.tag_name }}
           name: ${{ env.tag_name }}
