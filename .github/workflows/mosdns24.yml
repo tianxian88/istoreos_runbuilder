@@ -33,14 +33,13 @@ jobs:
       - name: Download latest mosdns files (OpenWrt 24.10 / ipk)
         run: |
           # 提取针对 24.10 且包含 .ipk 或通用 tar.gz 的下载链接（根据实际仓库命名调整，此处以 24.10 匹配为例）
-          curl -LO $(curl -s https://api.github.com/repos/sbwml/luci-app-mosdns/releases/latest | grep -oP '"browser_download_url":\s*".*aarch64_generic.*24.10.*tar.gz"' | cut -d '"' -f 4)
-          curl -LO $(curl -s https://api.github.com/repos/sbwml/luci-app-mosdns/releases/latest | grep -oP '"browser_download_url":\s*".*aarch64_cortex-a53.*24.10.*tar.gz"' | cut -d '"' -f 4)
-          curl -LO $(curl -s https://api.github.com/repos/sbwml/luci-app-mosdns/releases/latest | grep -oP '"browser_download_url":\s*".*x86_64.*24.10.*tar.gz"' | cut -d '"' -f 4)
+          curl -LO $(curl -s https://api.github.com/repos/sbwml/luci-app-mosdns/releases/latest | grep -oP '"browser_download_url":\s*".*aarch64_generic-openwrt-24.10.tar.gz"' | cut -d '"' -f 4)
+          curl -LO $(curl -s https://api.github.com/repos/sbwml/luci-app-mosdns/releases/latest | grep -oP '"browser_download_url":\s*".*aarch64_cortex-a53-openwrt-24.10.tar.gz"' | cut -d '"' -f 4)
+          curl -LO $(curl -s https://api.github.com/repos/sbwml/luci-app-mosdns/releases/latest | grep -oP '"browser_download_url":\s*".*x86_64-openwrt-24.10.tar.gz"' | cut -d '"' -f 4)
           
-          # 如果直接下载的是带有 24.10 的压缩包，解压它们
-          tar --one-top-level=aarch64_generic-openwrt-24.10 -xvzf *aarch64_generic*24.10*.tar.gz
-          tar --one-top-level=aarch64_cortex-a53-openwrt-24.10 -xvzf *aarch64_cortex-a53*24.10*.tar.gz
-          tar --one-top-level=x86_64-openwrt-24.10 -xvzf *x86_64*24.10*.tar.gz
+          tar --one-top-level=aarch64_generic-openwrt-24.10 -xvzf aarch64_generic-openwrt-24.10.tar.gz
+          tar --one-top-level=aarch64_cortex-a53-openwrt-24.10 -xvzf aarch64_cortex-a53-openwrt-24.10.tar.gz
+          tar --one-top-level=x86_64-openwrt-24.10 -xvzf x86_64-openwrt-24.10.tar.gz
 
       - name: Organize files for OpenWrt 24.10 (IPK)
         run: |
