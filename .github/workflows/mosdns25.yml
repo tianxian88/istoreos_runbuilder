@@ -6,7 +6,7 @@
 # Blog: wkdaily.cpolar.cn
 #=================================================
 
-name: Build 25.12 MosDNS
+name: Build 25.12 MosDNS Run Packages
 
 on:
   schedule:
