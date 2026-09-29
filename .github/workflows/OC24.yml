@@ -6,7 +6,7 @@
 # Blog: wkdaily.cpolar.cn
 #=================================================
 
-name: Build OpenClash (IPK for OpenWrt 24.10) with mihomo
+name: Build 24.10 OpenClash with mihomo
 
 on:
   schedule:
