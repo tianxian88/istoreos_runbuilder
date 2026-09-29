@@ -32,10 +32,12 @@ jobs:
 
       - name: Download latest mosdns files (OpenWrt 24.10 / ipk)
         run: |
-          # 提取针对 24.10 且包含 .ipk 或通用 tar.gz 的下载链接（根据实际仓库命名调整，此处以 24.10 匹配为例）
-          curl -LO $(curl -s https://api.github.com/repos/sbwml/luci-app-mosdns/releases/latest | grep -oP '"browser_download_url":\s*".*aarch64_generic-openwrt-24.10.tar.gz"' | cut -d '"' -f 4)
-          curl -LO $(curl -s https://api.github.com/repos/sbwml/luci-app-mosdns/releases/latest | grep -oP '"browser_download_url":\s*".*aarch64_cortex-a53-openwrt-24.10.tar.gz"' | cut -d '"' -f 4)
-          curl -LO $(curl -s https://api.github.com/repos/sbwml/luci-app-mosdns/releases/latest | grep -oP '"browser_download_url":\s*".*x86_64-openwrt-24.10.tar.gz"' | cut -d '"' -f 4)
+          # 使用获取到的 LATEST_TAG 拼接正确的下载直链
+          BASE_URL="https://github.com/sbwml/luci-app-mosdns/releases/download/${{ env.LATEST_TAG }}"
+          
+          curl -LO "${BASE_URL}/aarch64_generic-openwrt-24.10.tar.gz"
+          curl -LO "${BASE_URL}/aarch64_cortex-a53-openwrt-24.10.tar.gz"
+          curl -LO "${BASE_URL}/x86_64-openwrt-24.10.tar.gz"
           
           tar --one-top-level=aarch64_generic-openwrt-24.10 -xvzf aarch64_generic-openwrt-24.10.tar.gz
           tar --one-top-level=aarch64_cortex-a53-openwrt-24.10 -xvzf aarch64_cortex-a53-openwrt-24.10.tar.gz
@@ -92,7 +94,7 @@ jobs:
         id: vars
         run: |
           TODAY=$(date -u -d '+8 hour' +'%Y-%m-%d')
-          echo "tag_name=mosdns_${{ env.LATEST_TAG }}_24.10" >> $GITHUB_ENV
+          echo "tag_name=mosdns_${{ env.LATEST_TAG }}" >> $GITHUB_ENV
           
       - name: Upload run files as release assets
         uses: softprops/action-gh-release@v3
