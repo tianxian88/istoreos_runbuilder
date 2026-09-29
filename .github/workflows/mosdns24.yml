@@ -30,27 +30,22 @@ jobs:
       - name: Clone makeself repository
         run: git clone https://github.com/megastep/makeself.git
 
-      - name: Download latest mosdns files (OpenWrt 24.10 / ipk)
+      - name: Download latest mosdns files
         run: |
-          # 使用获取到的 LATEST_TAG 拼接正确的下载直链
-          BASE_URL="https://github.com/sbwml/luci-app-mosdns/releases/download/${{ env.LATEST_TAG }}"
           
-          curl -LO "${BASE_URL}/aarch64_generic-openwrt-24.10.tar.gz"
-          curl -LO "${BASE_URL}/aarch64_cortex-a53-openwrt-24.10.tar.gz"
-          curl -LO "${BASE_URL}/x86_64-openwrt-24.10.tar.gz"
+          curl -LO $(curl -s https://api.github.com/repos/sbwml/luci-app-mosdns/releases/latest | grep -oP '"browser_download_url":\s*".*aarch64_generic-openwrt-24.10.tar.gz"' | cut -d '"' -f 4)
+          curl -LO $(curl -s https://api.github.com/repos/sbwml/luci-app-mosdns/releases/latest | grep -oP '"browser_download_url":\s*".*aarch64_cortex-a53-openwrt-24.10.tar.gz"' | cut -d '"' -f 4)
+          curl -LO $(curl -s https://api.github.com/repos/sbwml/luci-app-mosdns/releases/latest | grep -oP '"browser_download_url":\s*".*x86_64-openwrt-24.10.tar.gz"' | cut -d '"' -f 4)
           
           tar --one-top-level=aarch64_generic-openwrt-24.10 -xvzf aarch64_generic-openwrt-24.10.tar.gz
           tar --one-top-level=aarch64_cortex-a53-openwrt-24.10 -xvzf aarch64_cortex-a53-openwrt-24.10.tar.gz
           tar --one-top-level=x86_64-openwrt-24.10 -xvzf x86_64-openwrt-24.10.tar.gz
-
-      - name: Organize files for OpenWrt 24.10 (IPK)
+      - name: Organize files for aarch64_cortex-a53&x86_64
         run: |
           mkdir mosdns_x86_64 mosdns_aarch64_cortex-a53 mosdns_aarch64_generic
-          # OpenWrt 24.10 使用 ipk 包
-          cp x86_64-openwrt-24.10/*.ipk mosdns_x86_64/ 2>/dev/null || cp x86_64-openwrt-24.10/packages/*.ipk mosdns_x86_64/ 2>/dev/null || true
-          cp aarch64_cortex-a53-openwrt-24.10/*.ipk mosdns_aarch64_cortex-a53/ 2>/dev/null || cp aarch64_cortex-a53-openwrt-24.10/packages/*.ipk mosdns_aarch64_cortex-a53/ 2>/dev/null || true
-          cp aarch64_generic-openwrt-24.10/*.ipk mosdns_aarch64_generic/ 2>/dev/null || cp aarch64_generic-openwrt-24.10/packages/*.ipk mosdns_aarch64_generic/ 2>/dev/null || true
-          
+          cp x86_64-openwrt-24.10/packages_ci/*.apk mosdns_x86_64/
+          cp aarch64_cortex-a53-openwrt-24.10/packages_ci/*.apk mosdns_aarch64_cortex-a53/
+          cp aarch64_generic-openwrt-24.10/packages_ci/*.apk mosdns_aarch64_generic
       - name: Create install.sh scripts (opkg)
         run: |
           cat <<EOF > mosdns_x86_64/install.sh
