@@ -64,26 +64,67 @@ jobs:
       # --------------------------------------------------------
       # 📥 统一集中下载 OpenClash 专属数据库并分发到所有架构目录
       # --------------------------------------------------------
-      - name: Download OpenClash Database Files
+      - name: Download OpenClash Database & Rule Files
         run: |
           echo "Current Path: $PWD"
-          echo "📥 正在集中下载 OpenClash 专属数据库组件..."
-          mkdir -p temp-db && cd temp-db
+          echo "📥 正在下载 OpenClash 数据库组件..."
+          mkdir -p temp-db
           
-          # 下载数据库
-          wget -qO "Country.mmdb" "https://testingcf.jsdelivr.net/gh/alecthw/mmdb_china_ip_list@release/lite/Country.mmdb"
-          wget -qO "geoip.dat" "https://testingcf.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/geoip.dat"
-          wget -qO "geosite.dat" "https://testingcf.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/geosite.dat"
-          wget -qO "GeoLite2-ASN.mmdb" "https://testingcf.jsdelivr.net/gh/xishang0128/geoip@release/GeoLite2-ASN.mmdb"
+          # 1. 下载数据库
+          wget -qO "temp-db/Country.mmdb" "https://testingcf.jsdelivr.net/gh/alecthw/mmdb_china_ip_list@release/lite/Country.mmdb"
+          wget -qO "temp-db/geoip.dat" "https://testingcf.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/geoip.dat"
+          wget -qO "temp-db/geosite.dat" "https://testingcf.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/geosite.dat"
+          wget -qO "temp-db/GeoLite2-ASN.mmdb" "https://testingcf.jsdelivr.net/gh/xishang0128/geoip@release/GeoLite2-ASN.mmdb"
           
-          # 返回根目录并利用循环分发到所有架构
-          cd ..
-          echo "📥 正在同步数据库文件到各架构目录..."
+          echo "📥 正在下载规则文件并去除后缀..."
+          mkdir -p temp-rules
+          
+          # 2. 文本格式规则 (.list)
+          curl -sL "https://raw.githubusercontent.com/qichiyuhub/rule/refs/heads/main/rules/fakeipfilter-cn.list" -o "temp-rules/fakeipfilter_cn"
+          curl -sL "https://raw.githubusercontent.com/qichiyuhub/rule/refs/heads/main/rules/fakeipfilter-!cn.list" -o "temp-rules/fakeipfilter_!cn"
+          
+          # 3. Domain 类型二进制规则 (.mrs)
+          curl -sL "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/private.mrs" -o "temp-rules/private_domain"
+          curl -sL "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/category-ai-!cn.mrs" -o "temp-rules/ai_domain"
+          curl -sL "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/youtube.mrs" -o "temp-rules/youtube_domain"
+          curl -sL "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/google.mrs" -o "temp-rules/google_domain"
+          curl -sL "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/github.mrs" -o "temp-rules/github_domain"
+          curl -sL "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/onedrive.mrs" -o "temp-rules/onedrive_domain"
+          curl -sL "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/microsoft@cn.mrs" -o "temp-rules/microsoftcn_domain"
+          curl -sL "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/microsoft.mrs" -o "temp-rules/microsoft_domain"
+          curl -sL "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/apple@cn.mrs" -o "temp-rules/applecn_domain"
+          curl -sL "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/apple.mrs" -o "temp-rules/apple_domain"
+          curl -sL "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/telegram.mrs" -o "temp-rules/telegram_domain"
+          curl -sL "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/tiktok.mrs" -o "temp-rules/tiktok_domain"
+          curl -sL "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/netflix.mrs" -o "temp-rules/netflix_domain"
+          curl -sL "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/paypal.mrs" -o "temp-rules/paypal_domain"
+          curl -sL "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/binance.mrs" -o "temp-rules/binance_domain"
+          curl -sL "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/okx.mrs" -o "temp-rules/okx_domain"
+          curl -sL "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/category-cryptocurrency.mrs" -o "temp-rules/usd_domain"
+          curl -sL "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/steam@cn.mrs" -o "temp-rules/steamcn_domain"
+          curl -sL "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/steam.mrs" -o "temp-rules/steam_domain"
+          curl -sL "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/geolocation-!cn.mrs" -o "temp-rules/cn!_domain"
+          curl -sL "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/cn.mrs" -o "temp-rules/cn_domain"
+          
+          # 4. IP 类型二进制规则 (.mrs)
+          curl -sL "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/google.mrs" -o "temp-rules/google_ip"
+          curl -sL "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo-lite/geoip/apple.mrs" -o "temp-rules/apple_ip"
+          curl -sL "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/telegram.mrs" -o "temp-rules/telegram_ip"
+          curl -sL "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/netflix.mrs" -o "temp-rules/netflix_ip"
+          curl -sL "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/cn.mrs" -o "temp-rules/cn_ip"
+          curl -sL "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/private.mrs" -o "temp-rules/private_ip"
+          
+          echo "📥 正在同步数据库和无后缀规则文件到各架构目录..."
           for arch in x86_64 x86_64_v1 x86_64_v3 a53 armv7; do
-            mkdir -p openclash-${arch}/etc/openclash
+            # 创建对应目录
+            mkdir -p openclash-${arch}/etc/openclash/rule_provider
+            
+            # 复制数据库文件
             cp temp-db/* openclash-${arch}/etc/openclash/
+            
+            # 复制无后缀规则文件到 rule_provider 中
+            cp temp-rules/* openclash-${arch}/etc/openclash/rule_provider/
           done
-
       # --------------------------------------------------------
       # 🛠️ 生成安装脚本并分发 (适配 OpenWrt 24.10 ipk)
       # --------------------------------------------------------
