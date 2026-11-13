@@ -80,8 +80,8 @@ jobs:
           mkdir -p temp-rules
           
           # 2. 文本格式规则 (.list)
-          curl -sL "https://raw.githubusercontent.com/qichiyuhub/rule/refs/heads/main/rules/fakeipfilter-cn.list" -o "temp-rules/fakeipfilter_cn"
-          curl -sL "https://raw.githubusercontent.com/qichiyuhub/rule/refs/heads/main/rules/fakeipfilter-!cn.list" -o "temp-rules/fakeipfilter_!cn"
+          curl -sL "https://raw.githubusercontent.com/tianxian88/rule/refs/heads/main/rules/fakeipfilter-cn.list" -o "temp-rules/fakeipfilter_cn"
+          curl -sL "https://raw.githubusercontent.com/tianxian88/rule/refs/heads/main/rules/fakeipfilter-!cn.list" -o "temp-rules/fakeipfilter_!cn"
           
           # 3. Domain 类型二进制规则 (.mrs)
           curl -sL "https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/private.mrs" -o "temp-rules/private_domain"
